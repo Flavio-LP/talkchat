@@ -1,0 +1,46 @@
+# PostgreSQL. Versions 9.3 and up are supported.
+#
+# Connection settings come from ENV (loaded from backend/.env by dotenv-rails in
+# development/test). The local cluster on this machine listens on 5433, not the
+# default 5432 — see backend/.env.example.
+#
+# DATABASE_HOST is deliberately optional. When it is blank the driver uses the
+# local Unix socket, which Debian/Ubuntu configures for `peer` auth — that is
+# what makes the documented setup work with a passwordless role:
+#
+#     sudo -u postgres psql -p 5433 -c "CREATE ROLE flavio WITH LOGIN CREATEDB;"
+#
+# Setting DATABASE_HOST=localhost forces a TCP connection, which the default
+# pg_hba.conf answers with scram-sha-256 — that path additionally needs
+# DATABASE_PASSWORD and a role created WITH PASSWORD.
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # For details on connection pooling, see Rails configuration guide
+  # https://guides.rubyonrails.org/configuring.html#database-pooling
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "flavio") %>
+<% unless ENV["DATABASE_HOST"].to_s.strip.empty? %>
+  host: <%= ENV["DATABASE_HOST"] %>
+<% end %>
+<% unless ENV["DATABASE_PASSWORD"].to_s.empty? %>
+  password: <%= ENV["DATABASE_PASSWORD"] %>
+<% end %>
+
+development:
+  <<: *default
+  database: chalk_talk_development
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: *default
+  database: chalk_talk_test
+
+production:
+  <<: *default
+  database: chalk_talk_production
+  username: <%= ENV.fetch("DATABASE_USERNAME", "chalk_talk") %>
+  password: <%= ENV["CHALK_TALK_DATABASE_PASSWORD"] %>

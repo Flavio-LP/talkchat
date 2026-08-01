@@ -1,0 +1,75 @@
+name: chalk-talk
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flavio
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: chalk_talk_development
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flavio -d chalk_talk_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override the host-oriented defaults from backend/.env: inside the
+      # compose network the DB and Redis are reachable by service name, over
+      # TCP, not via the host's Unix socket / port 5433.
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_USERNAME: flavio
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://redis:6379/1
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - backend_bundle:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      # The browser (not the container) calls the backend, so this must be the
+      # host-published port, not the internal service name.
+      VITE_API_BASE_URL: http://localhost:3000/api/v1
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+  redis_data:
+  backend_bundle:
+  frontend_node_modules:

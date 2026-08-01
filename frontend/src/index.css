@@ -1,0 +1,172 @@
+:root {
+  --bg: #f6f4fd;
+  --bg-grad-top: #efe9ff;
+  --bg-grad-bottom: #fbfbff;
+  --surface: #ffffff;
+  --surface-alt: #f8f6fe;
+  --border: #e7e1f7;
+  --text: #221c35;
+  --muted: #6b6480;
+
+  --accent: #7e14ff;
+  --accent-2: #47bfff;
+  --accent-soft: #efe7ff;
+  --accent-gradient: linear-gradient(135deg, #7e14ff 0%, #9a3bff 45%, #47bfff 100%);
+
+  --error: #c81e45;
+  --error-soft: #fdecef;
+  --warning: #8a6a1f;
+  --warning-soft: #fff6e0;
+  --praise: #12855b;
+  --praise-soft: #e5f7ee;
+
+  --shadow-sm: 0 1px 3px rgba(35, 15, 75, 0.06);
+  --shadow-md: 0 10px 30px -10px rgba(64, 20, 140, 0.18);
+  --shadow-lg: 0 20px 45px -15px rgba(64, 20, 140, 0.28);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: light;
+
+  font: 16px/1.55 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: color 0.25s var(--ease);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #14101f;
+  --bg-grad-top: #1f1633;
+  --bg-grad-bottom: #0f0c19;
+  --surface: #1c1730;
+  --surface-alt: #241d3d;
+  --border: #332a52;
+  --text: #ede9fb;
+  --muted: #a79fc4;
+
+  --accent: #b06bff;
+  --accent-2: #5fd4ff;
+  --accent-soft: #2f2354;
+  --accent-gradient: linear-gradient(135deg, #a855ff 0%, #b968ff 45%, #5fd4ff 100%);
+
+  --error: #ff8aa3;
+  --error-soft: #3a1622;
+  --warning: #f0cd7a;
+  --warning-soft: #3a2f10;
+  --praise: #5fe0ab;
+  --praise-soft: #123626;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 45px -15px rgba(0, 0, 0, 0.65);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, var(--bg-grad-top), transparent 60%),
+    radial-gradient(50rem 30rem at 100% 0%, var(--bg-grad-accent, #e6f5ff), transparent 55%),
+    var(--bg-grad-bottom);
+  background-attachment: fixed;
+  transition: background-color 0.25s var(--ease);
+}
+
+:root[data-theme='dark'] body {
+  --bg-grad-accent: #1a2540;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+p {
+  margin: 0 0 0.6em;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.6rem 1.1rem;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease),
+    background-color 0.15s var(--ease), border-color 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:focus-visible,
+input:focus-visible,
+label:has(input):focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input[type='text'],
+input[type='password'] {
+  font: inherit;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: inherit;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+input[type='text']:focus-visible,
+input[type='password']:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+input[type='text']::placeholder,
+input[type='password']::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

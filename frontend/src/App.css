@@ -1,0 +1,494 @@
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- Header ---------- */
+
+.app__header {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.app__logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  filter: drop-shadow(0 6px 14px rgba(126, 20, 255, 0.25));
+}
+
+.app__heading h1 {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app__subtitle {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
+.icon-button {
+  flex: none;
+  align-self: flex-start;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+/* Only the first icon button (theme toggle) needs to push the group to the
+   header's right edge; the ones after it just follow in normal flex flow. */
+.icon-button:first-of-type {
+  margin-left: auto;
+}
+
+.icon-button:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.icon-button svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+/* ---------- Banners ---------- */
+
+.app__banner {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+  animation: slide-in 0.25s var(--ease);
+}
+
+.app__banner--error {
+  background: var(--error-soft);
+  border-color: rgba(200, 30, 69, 0.25);
+  color: var(--error);
+}
+
+.app__banner--warning {
+  background: var(--warning-soft);
+  border-color: rgba(138, 106, 31, 0.25);
+  color: var(--warning);
+}
+
+/* ---------- Control panel ---------- */
+
+.app__panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.app__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.mic {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.05rem;
+  padding: 1rem 2.1rem;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 12px 24px -8px rgba(126, 20, 255, 0.55);
+}
+
+.mic:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.mic__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+}
+
+.mic--listening {
+  box-shadow: 0 12px 24px -8px rgba(126, 20, 255, 0.7);
+}
+
+.mic--listening::before,
+.mic--listening::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--accent-2);
+  animation: pulse-ring 1.8s var(--ease) infinite;
+}
+
+.mic--listening::after {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+/* Switch-style toggle for "speak replies aloud" */
+
+.app__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app__toggle input {
+  appearance: none;
+  width: 2.25rem;
+  height: 1.3rem;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease);
+}
+
+.app__toggle input::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease);
+}
+
+.app__toggle input:checked {
+  background: var(--accent-gradient);
+}
+
+.app__toggle input:checked::before {
+  transform: translateX(0.95rem);
+}
+
+.app__interim {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-style: italic;
+  animation: slide-in 0.2s var(--ease);
+}
+
+/* ---------- Text form ---------- */
+
+.app__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app__form-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.app__form-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.app__form input {
+  flex: 1 1 16rem;
+}
+
+.app__form-row button {
+  border-radius: var(--radius-full);
+  padding: 0.7rem 1.4rem;
+  background: var(--accent-gradient);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+
+.app__form-row button:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ---------- Status / loading ---------- */
+
+.app__status {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  animation: fade-in 0.2s var(--ease);
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Empty state ---------- */
+
+.app__empty {
+  text-align: center;
+  padding: 2.25rem 1.5rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--muted);
+  background: var(--surface-alt);
+}
+
+.app__empty-icon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* ---------- Turns ---------- */
+
+.app__turns {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.turn-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: rise-in 0.3s var(--ease);
+}
+
+.turn-card p {
+  margin: 0;
+}
+
+.turn-card__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+.turn-card__said {
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+}
+
+.turn-card__corrected {
+  font-weight: 600;
+}
+
+.turn-card__corrected .turn-card__label {
+  color: var(--accent);
+}
+
+.turn-card__issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.turn-card__issue {
+  border-left: 3px solid var(--error);
+  background: var(--error-soft);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0.55rem 0.8rem;
+}
+
+.turn-card__fix s {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.turn-card__type {
+  margin-left: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  padding: 0.1rem 0.55rem;
+}
+
+.turn-card__explanation {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-top: 0.25rem;
+}
+
+.turn-card__clean,
+.turn-card__praise {
+  color: var(--praise);
+  background: var(--praise-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+}
+
+.turn-card__clean::before {
+  content: '✓ ';
+  font-weight: 700;
+}
+
+.turn-card__praise::before {
+  content: '★ ';
+}
+
+.turn-card__reply .turn-card__label::before {
+  content: '🍎 ';
+}
+
+.turn-card__reply {
+  background: var(--accent-gradient);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 0.95rem;
+}
+
+.turn-card__reply .turn-card__label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.turn-card__reply-translation {
+  margin-top: 0.35rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.turn-card__reply-structure {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__banner,
+  .app__interim,
+  .app__status,
+  .turn-card,
+  .spinner,
+  .mic--listening::before,
+  .mic--listening::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .app {
+    padding: 1.75rem 0.9rem 4rem;
+  }
+
+  .app__panel {
+    padding: 1.1rem 0.9rem;
+  }
+
+  .mic {
+    width: 100%;
+    justify-content: center;
+  }
+}
