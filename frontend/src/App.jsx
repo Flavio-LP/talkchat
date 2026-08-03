@@ -141,7 +141,7 @@ function App() {
   return (
     <main className="app">
       <header className="app__header">
-        <img className="app__logo" src="/favicon.svg" alt="" aria-hidden="true" />
+        <img className="app__logo" src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" aria-hidden="true" />
         <div className="app__heading">
           <h1>Chalk Talk</h1>
           <p className="app__subtitle">

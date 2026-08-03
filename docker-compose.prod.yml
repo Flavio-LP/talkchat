@@ -1,0 +1,31 @@
+# Chalk Talk — production stack.
+# Backend published only on 127.0.0.1:3010; nginx proxies /talkchat/api/ to it.
+# Postgres lives in the shared pg_production container (external network shared_db).
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    env_file: backend/.env.production
+    command: sh -c "bin/rails db:prepare && bundle exec puma -C config/puma.rb -b tcp://0.0.0.0:3000"
+    depends_on:
+      - redis
+    networks:
+      - default
+      - shared_db
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+networks:
+  shared_db:
+    external: true
+
+volumes:
+  redis_data:

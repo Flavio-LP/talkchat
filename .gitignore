@@ -34,6 +34,7 @@ backend/tmp/
 backend/storage/
 backend/config/master.key
 backend/.env
+backend/.env.production
 
 # Chalk Talk — React frontend
 frontend/dist/
