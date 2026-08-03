@@ -36,9 +36,11 @@ describe('useSpeechRecognition', () => {
   beforeEach(() => {
     FakeSpeechRecognition.instances = []
     window.SpeechRecognition = FakeSpeechRecognition
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     delete window.SpeechRecognition
     delete window.webkitSpeechRecognition
   })
@@ -61,11 +63,11 @@ describe('useSpeechRecognition', () => {
     expect(result.current.isSupported).toBe(true)
   })
 
-  it('configures the recognition for single-utterance English with interim results', () => {
+  it('configures the recognition for continuous English capture with interim results', () => {
     renderHook(() => useSpeechRecognition(vi.fn()))
 
     expect(latest().lang).toBe('en-US')
-    expect(latest().continuous).toBe(false)
+    expect(latest().continuous).toBe(true)
     expect(latest().interimResults).toBe(true)
   })
 
@@ -100,7 +102,7 @@ describe('useSpeechRecognition', () => {
     expect(onFinal).not.toHaveBeenCalled()
   })
 
-  it('calls onFinalResult and clears the interim text on a final transcript', () => {
+  it('calls onFinalResult and clears the interim text after the pause grace period', () => {
     const onFinal = vi.fn()
     const { result } = renderHook(() => useSpeechRecognition(onFinal))
 
@@ -111,8 +113,58 @@ describe('useSpeechRecognition', () => {
       latest().onresult(resultsEvent([['I have went to school ', true]]))
     })
 
+    // A final segment lands, but the student may still be mid-thought:
+    // onFinalResult must wait out the grace period, not fire immediately.
+    expect(onFinal).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(1500)
+    })
+
     expect(onFinal).toHaveBeenCalledWith('I have went to school')
     expect(result.current.interimText).toBe('')
+  })
+
+  it('gives a fresh pause before finalizing whenever more speech arrives', () => {
+    const onFinal = vi.fn()
+    renderHook(() => useSpeechRecognition(onFinal))
+
+    act(() => {
+      latest().onresult(resultsEvent([['I have went ', true]]))
+    })
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    // Still within the grace period, more speech arrives (the student was
+    // just thinking, not done) — this should push the clock back out rather
+    // than let the earlier segment finalize on its own.
+    act(() => {
+      latest().onresult(resultsEvent([['to school yesterday', false]]))
+    })
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(onFinal).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(onFinal).toHaveBeenCalledWith('I have went')
+  })
+
+  it('flushes any pending final transcript immediately if the engine ends the session early', () => {
+    const onFinal = vi.fn()
+    const { result } = renderHook(() => useSpeechRecognition(onFinal))
+
+    act(() => {
+      latest().onresult(resultsEvent([['I have went to school', true]]))
+    })
+    act(() => {
+      latest().onend()
+    })
+
+    expect(onFinal).toHaveBeenCalledWith('I have went to school')
+    expect(result.current.listening).toBe(false)
   })
 
   it('ignores a final transcript that is only whitespace', () => {
@@ -194,6 +246,9 @@ describe('useSpeechRecognition', () => {
     rerender({ cb: second })
     act(() => {
       latest().onresult(resultsEvent([['hello', true]]))
+    })
+    act(() => {
+      vi.advanceTimersByTime(1500)
     })
 
     expect(first).not.toHaveBeenCalled()

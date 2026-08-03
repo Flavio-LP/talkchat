@@ -16,6 +16,13 @@ function getRecognitionClass() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null
 }
 
+// Chrome's own pause detection ends a single-utterance session on the first
+// silence, cutting the student off mid-thought. Recognition instead runs
+// continuously and this hook decides when the student is actually done: any
+// new speech pushes this clock back out, giving a real thinking pause room
+// before the utterance is treated as finished.
+const FINALIZE_DELAY_MS = 2000
+
 /**
  * Wraps the browser Web Speech API.
  *
@@ -31,6 +38,10 @@ export default function useSpeechRecognition(onFinalResult) {
   // Held in a ref so a changing callback identity never tears down and
   // recreates the SpeechRecognition instance mid-utterance.
   const onFinalResultRef = useRef(onFinalResult)
+  // Accumulates final segments across the continuous session until
+  // scheduleFinalize() (or an early engine-triggered onend) flushes them.
+  const finalTranscriptRef = useRef('')
+  const finalizeTimeoutRef = useRef(null)
 
   useEffect(() => {
     onFinalResultRef.current = onFinalResult
@@ -44,11 +55,41 @@ export default function useSpeechRecognition(onFinalResult) {
 
     const recognition = new RecognitionClass()
     recognition.lang = 'en-US'
-    recognition.continuous = false
+    // Continuous keeps the mic open across a brief thinking pause instead of
+    // ending the whole session on the engine's first detected silence;
+    // scheduleFinalize() below is what actually decides the student is done.
+    recognition.continuous = true
     recognition.interimResults = true
 
+    const clearFinalizeTimeout = () => {
+      if (finalizeTimeoutRef.current) {
+        clearTimeout(finalizeTimeoutRef.current)
+        finalizeTimeoutRef.current = null
+      }
+    }
+
+    const flushFinalTranscript = () => {
+      const text = finalTranscriptRef.current.trim()
+      finalTranscriptRef.current = ''
+      if (text) onFinalResultRef.current?.(text)
+    }
+
+    const scheduleFinalize = () => {
+      clearFinalizeTimeout()
+      finalizeTimeoutRef.current = setTimeout(() => {
+        finalizeTimeoutRef.current = null
+        flushFinalTranscript()
+        setInterimText('')
+        try {
+          recognition.stop()
+        } catch {
+          // Nothing to stop.
+        }
+      }, FINALIZE_DELAY_MS)
+    }
+
     recognition.onresult = (event) => {
-      let finalText = ''
+      let newFinal = ''
       let interim = ''
 
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -56,7 +97,7 @@ export default function useSpeechRecognition(onFinalResult) {
         const transcript = result[0]?.transcript ?? ''
 
         if (result.isFinal) {
-          finalText += transcript
+          newFinal += transcript
         } else {
           interim += transcript
         }
@@ -64,10 +105,14 @@ export default function useSpeechRecognition(onFinalResult) {
 
       setInterimText(interim)
 
-      const trimmed = finalText.trim()
-      if (trimmed) {
-        setInterimText('')
-        onFinalResultRef.current?.(trimmed)
+      if (newFinal.trim()) {
+        finalTranscriptRef.current = `${finalTranscriptRef.current} ${newFinal}`.trim()
+      }
+
+      // Any activity — a finalized chunk or still-interim speech — means the
+      // student is mid-utterance, so push the "are they done" clock back out.
+      if (newFinal.trim() || interim.trim()) {
+        scheduleFinalize()
       }
     }
 
@@ -78,12 +123,19 @@ export default function useSpeechRecognition(onFinalResult) {
           ? ERROR_MESSAGES[code]
           : 'O reconhecimento de voz falhou. Use o campo de texto.'
 
+      clearFinalizeTimeout()
+      finalTranscriptRef.current = ''
       if (message) setError(message)
       setListening(false)
       setInterimText('')
     }
 
     recognition.onend = () => {
+      // Covers the engine ending the session on its own (error, permission
+      // change, or an eventual long-silence timeout) before our own grace
+      // period elapsed — whatever was captured so far still gets sent.
+      clearFinalizeTimeout()
+      flushFinalTranscript()
       setListening(false)
       setInterimText('')
     }
@@ -91,6 +143,8 @@ export default function useSpeechRecognition(onFinalResult) {
     recognitionRef.current = recognition
 
     return () => {
+      clearFinalizeTimeout()
+      finalTranscriptRef.current = ''
       recognition.onresult = null
       recognition.onerror = null
       recognition.onend = null
@@ -109,6 +163,7 @@ export default function useSpeechRecognition(onFinalResult) {
 
     setError(null)
     setInterimText('')
+    finalTranscriptRef.current = ''
 
     try {
       recognition.start()

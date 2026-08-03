@@ -11,8 +11,8 @@ function isAuthError(error) {
   return error.status === 401
 }
 
-/** Speaks the teacher's English reply. Silently no-ops where unsupported. */
-function speak(text) {
+/** Speaks an English phrase at the given rate. Silently no-ops where unsupported. */
+function speak(text, rate = 1) {
   if (!text) return
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
   if (typeof window.SpeechSynthesisUtterance !== 'function') return
@@ -22,6 +22,7 @@ function speak(text) {
 
   const utterance = new window.SpeechSynthesisUtterance(text)
   utterance.lang = 'en-US'
+  utterance.rate = rate
   window.speechSynthesis.speak(utterance)
 }
 
@@ -31,6 +32,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState(null)
   const [sending, setSending] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [speechRate, setSpeechRate] = useState(1)
   const [draft, setDraft] = useState('')
   const [authError, setAuthError] = useState(null)
   const { theme, toggleTheme } = useTheme()
@@ -42,6 +44,7 @@ function App() {
   const conversationIdRef = useRef(null)
   const sendingRef = useRef(false)
   const voiceEnabledRef = useRef(true)
+  const speechRateRef = useRef(1)
   // StrictMode mounts effects twice in development; without this guard every
   // dev page load would create two conversations and orphan the first.
   const createdRef = useRef(false)
@@ -49,6 +52,10 @@ function App() {
   useEffect(() => {
     voiceEnabledRef.current = voiceEnabled
   }, [voiceEnabled])
+
+  useEffect(() => {
+    speechRateRef.current = speechRate
+  }, [speechRate])
 
   useEffect(() => {
     // Nothing to create yet: the login gate renders instead of this effect's
@@ -97,7 +104,7 @@ function App() {
       // scrolling down past the whole lesson history.
       setTurns((previous) => [turn, ...previous])
 
-      if (voiceEnabledRef.current) speak(turn.reply)
+      if (voiceEnabledRef.current) speak(turn.reply, speechRateRef.current)
     } catch (error) {
       if (isAuthError(error)) {
         // Token rotated or expired mid-session: bounce back to the gate
@@ -271,6 +278,19 @@ function App() {
             />
             Falar respostas em voz alta
           </label>
+
+          <label className="app__rate">
+            Velocidade da voz
+            <select
+              value={speechRate}
+              onChange={(event) => setSpeechRate(Number(event.target.value))}
+            >
+              <option value={0.5}>0.5x</option>
+              <option value={0.75}>0.75x</option>
+              <option value={1}>1x</option>
+              <option value={1.25}>1.25x</option>
+            </select>
+          </label>
         </div>
 
         {interimText && <p className="app__interim">{interimText}</p>}
@@ -314,7 +334,11 @@ function App() {
       ) : (
         <section className="app__turns">
           {turns.map((turn) => (
-            <TurnCard key={turn.id} turn={turn} />
+            <TurnCard
+              key={turn.id}
+              turn={turn}
+              onRepeat={(text) => speak(text, speechRate)}
+            />
           ))}
         </section>
       )}

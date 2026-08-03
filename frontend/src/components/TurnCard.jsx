@@ -1,11 +1,18 @@
+import { useState } from 'react'
+
 /**
  * One analysed utterance.
  *
  * Every field here is LLM output derived from user input, so it is rendered as
  * text only — never dangerouslySetInnerHTML. React's default escaping is the
  * whole XSS defence.
+ *
+ * @param {{ turn: object, onRepeat?: (text: string) => void }} props
  */
-export default function TurnCard({ turn }) {
+export default function TurnCard({ turn, onRepeat }) {
+  // Hidden by default: the Portuguese translation is a crutch the student
+  // should reach for on purpose, not read passively alongside the English.
+  const [showTranslation, setShowTranslation] = useState(false)
   const issues = Array.isArray(turn.issues) ? turn.issues : []
   const hasIssues = issues.length > 0
 
@@ -51,7 +58,30 @@ export default function TurnCard({ turn }) {
             <span className="turn-card__label">Teacher</span>
             {turn.reply}
           </p>
-          {turn.reply_translation && (
+
+          <div className="turn-card__reply-actions">
+            {onRepeat && (
+              <button
+                type="button"
+                className="turn-card__repeat"
+                onClick={() => onRepeat(turn.reply)}
+              >
+                🔊 Repetir
+              </button>
+            )}
+            {turn.reply_translation && (
+              <button
+                type="button"
+                className="turn-card__translation-toggle"
+                onClick={() => setShowTranslation((prev) => !prev)}
+                aria-expanded={showTranslation}
+              >
+                {showTranslation ? 'Ocultar tradução' : 'Ver tradução'}
+              </button>
+            )}
+          </div>
+
+          {showTranslation && turn.reply_translation && (
             <p className="turn-card__reply-translation">{turn.reply_translation}</p>
           )}
           {turn.reply_structure && (

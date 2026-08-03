@@ -207,6 +207,26 @@
   transform: translateX(0.95rem);
 }
 
+/* Speech-rate selector next to the "speak replies aloud" toggle */
+
+.app__rate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.app__rate select {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .app__interim {
   margin: 0;
   padding: 0.7rem 0.9rem;
@@ -419,8 +439,32 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.turn-card__reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.turn-card__repeat,
+.turn-card__translation-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease);
+}
+
+.turn-card__repeat:hover,
+.turn-card__translation-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .turn-card__reply-translation {
-  margin-top: 0.35rem;
+  margin-top: 0.5rem;
   font-style: italic;
   color: rgba(255, 255, 255, 0.85);
 }

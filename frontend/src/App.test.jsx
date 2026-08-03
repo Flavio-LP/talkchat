@@ -104,8 +104,15 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Boa construção!')).toBeInTheDocument()
     expect(screen.getByText(turnFixture.reply)).toBeInTheDocument()
-    expect(screen.getByText(turnFixture.reply_translation)).toBeInTheDocument()
     expect(screen.getByText(new RegExp(turnFixture.reply_structure))).toBeInTheDocument()
+
+    // The Portuguese translation is a crutch the student opts into, not
+    // something shown alongside the English by default.
+    expect(screen.queryByText(turnFixture.reply_translation)).toBeNull()
+    await user.click(screen.getByRole('button', { name: /ver tradução/i }))
+    expect(screen.getByText(turnFixture.reply_translation)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /ocultar tradução/i }))
+    expect(screen.queryByText(turnFixture.reply_translation)).toBeNull()
   })
 
   it('speaks the reply when the voice toggle is on', async () => {
@@ -116,6 +123,34 @@ describe('App', () => {
 
     await waitFor(() => expect(window.speechSynthesis.speak).toHaveBeenCalled())
     expect(window.speechSynthesis.cancel).toHaveBeenCalled()
+    expect(window.speechSynthesis.speak.mock.calls[0][0].text).toBe(
+      turnFixture.reply,
+    )
+    expect(window.speechSynthesis.speak.mock.calls[0][0].rate).toBe(1)
+  })
+
+  it('speaks the reply at the selected rate', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByLabelText(/velocidade da voz/i), '0.75')
+    await typeAndSend(user)
+
+    await waitFor(() => expect(window.speechSynthesis.speak).toHaveBeenCalled())
+    expect(window.speechSynthesis.speak.mock.calls[0][0].rate).toBe(0.75)
+  })
+
+  it('repeats the reply on demand from the turn card', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await typeAndSend(user)
+    await screen.findByText(turnFixture.reply)
+    window.speechSynthesis.speak.mockClear()
+
+    await user.click(screen.getByRole('button', { name: /repetir/i }))
+
+    expect(window.speechSynthesis.speak).toHaveBeenCalledTimes(1)
     expect(window.speechSynthesis.speak.mock.calls[0][0].text).toBe(
       turnFixture.reply,
     )
@@ -188,8 +223,12 @@ describe('App', () => {
       ),
     })
 
-    await waitFor(() =>
-      expect(sendTurn).toHaveBeenCalledWith(42, turnFixture.user_text),
+    // The hook waits out its pause grace period (FINALIZE_DELAY_MS) before
+    // treating this as the student's final answer, so give waitFor more than
+    // the default 1000ms to catch it.
+    await waitFor(
+      () => expect(sendTurn).toHaveBeenCalledWith(42, turnFixture.user_text),
+      { timeout: 2000 },
     )
     expect(await screen.findByText(turnFixture.reply)).toBeInTheDocument()
   })
