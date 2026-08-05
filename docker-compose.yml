@@ -43,7 +43,8 @@ services:
       REDIS_URL: redis://redis:6379/1
       CORS_ORIGINS: http://localhost:5173
     ports:
-      - "3000:3000"
+      # Parameterized because other stacks on this host already claim 3000.
+      - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./backend:/app
       - backend_bundle:/usr/local/bundle
@@ -64,7 +65,7 @@ services:
     environment:
       # The browser (not the container) calls the backend, so this must be the
       # host-published port, not the internal service name.
-      VITE_API_BASE_URL: http://localhost:3000/api/v1
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT:-3000}/api/v1
     depends_on:
       - backend
 

@@ -118,7 +118,7 @@ describe('useSpeechRecognition', () => {
     expect(onFinal).not.toHaveBeenCalled()
 
     act(() => {
-      vi.advanceTimersByTime(1500)
+      vi.advanceTimersByTime(2000)
     })
 
     expect(onFinal).toHaveBeenCalledWith('I have went to school')
@@ -137,9 +137,15 @@ describe('useSpeechRecognition', () => {
     })
     // Still within the grace period, more speech arrives (the student was
     // just thinking, not done) — this should push the clock back out rather
-    // than let the earlier segment finalize on its own.
+    // than let the earlier segment finalize on its own. Real engines deliver
+    // event.results cumulatively: earlier finals ride along with new speech.
     act(() => {
-      latest().onresult(resultsEvent([['to school yesterday', false]]))
+      latest().onresult(
+        resultsEvent([
+          ['I have went ', true],
+          ['to school yesterday', false],
+        ]),
+      )
     })
     act(() => {
       vi.advanceTimersByTime(1000)
@@ -147,7 +153,7 @@ describe('useSpeechRecognition', () => {
     expect(onFinal).not.toHaveBeenCalled()
 
     act(() => {
-      vi.advanceTimersByTime(500)
+      vi.advanceTimersByTime(1000)
     })
     expect(onFinal).toHaveBeenCalledWith('I have went')
   })
@@ -165,6 +171,70 @@ describe('useSpeechRecognition', () => {
 
     expect(onFinal).toHaveBeenCalledWith('I have went to school')
     expect(result.current.listening).toBe(false)
+  })
+
+  it('does not duplicate words when the engine re-delivers earlier final results', () => {
+    // Android Chrome resends the whole result list with resultIndex 0 on every
+    // event, so already-final segments arrive again and again. The transcript
+    // must come out clean, not "I live I live in Brazil in Brazil".
+    const onFinal = vi.fn()
+    renderHook(() => useSpeechRecognition(onFinal))
+
+    act(() => {
+      latest().onresult(resultsEvent([['I live', true]]))
+    })
+    act(() => {
+      latest().onresult(
+        resultsEvent([
+          ['I live', true],
+          [' in Brazil', false],
+        ]),
+      )
+    })
+    act(() => {
+      latest().onresult(
+        resultsEvent([
+          ['I live', true],
+          [' in Brazil', true],
+        ]),
+      )
+    })
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
+
+    expect(onFinal).toHaveBeenCalledWith('I live in Brazil')
+  })
+
+  it('cancel() aborts the recognition and discards everything without sending', () => {
+    const onFinal = vi.fn()
+    const { result } = renderHook(() => useSpeechRecognition(onFinal))
+
+    act(() => result.current.start())
+    act(() => {
+      latest().onresult(
+        resultsEvent([
+          ['I live in Brazil', true],
+          [' and I', false],
+        ]),
+      )
+    })
+
+    act(() => result.current.cancel())
+
+    expect(latest().abort).toHaveBeenCalled()
+    expect(result.current.listening).toBe(false)
+    expect(result.current.interimText).toBe('')
+
+    // Neither the engine's onend after abort nor the (cleared) finalize timer
+    // may leak the discarded speech out as a message.
+    act(() => {
+      latest().onend()
+    })
+    act(() => {
+      vi.advanceTimersByTime(2000)
+    })
+    expect(onFinal).not.toHaveBeenCalled()
   })
 
   it('ignores a final transcript that is only whitespace', () => {
@@ -225,6 +295,105 @@ describe('useSpeechRecognition', () => {
     expect(result.current.listening).toBe(false)
   })
 
+  describe('on Android', () => {
+    const originalUserAgent = window.navigator.userAgent
+
+    beforeEach(() => {
+      Object.defineProperty(window.navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile Safari/537.36',
+        configurable: true,
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(window.navigator, 'userAgent', {
+        value: originalUserAgent,
+        configurable: true,
+      })
+    })
+
+    it('disables continuous mode, where Android duplicates words', () => {
+      renderHook(() => useSpeechRecognition(vi.fn()))
+
+      expect(latest().continuous).toBe(false)
+    })
+
+    it('restarts across engine pauses and sends the stitched utterance once', () => {
+      const onFinal = vi.fn()
+      const { result } = renderHook(() => useSpeechRecognition(onFinal))
+
+      act(() => result.current.start())
+      act(() => {
+        latest().onresult(resultsEvent([['I live', true]]))
+      })
+      // Android closes the one-utterance session on its own pause detection.
+      act(() => {
+        latest().onend()
+      })
+
+      expect(latest().start).toHaveBeenCalledTimes(2)
+      expect(result.current.listening).toBe(true)
+      expect(onFinal).not.toHaveBeenCalled()
+
+      // The next session starts a fresh result list — earlier text must come
+      // from the committed buffer, not be lost or repeated.
+      act(() => {
+        latest().onresult(resultsEvent([[' in Brazil', true]]))
+      })
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+
+      expect(onFinal).toHaveBeenCalledTimes(1)
+      expect(onFinal).toHaveBeenCalledWith('I live in Brazil')
+      expect(latest().stop).toHaveBeenCalled()
+    })
+
+    it('drops identical back-to-back final entries (engine echo)', () => {
+      const onFinal = vi.fn()
+      renderHook(() => useSpeechRecognition(onFinal))
+
+      act(() => {
+        latest().onresult(
+          resultsEvent([
+            ['I live in Brazil', true],
+            ['I live in Brazil', true],
+          ]),
+        )
+      })
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+
+      expect(onFinal).toHaveBeenCalledWith('I live in Brazil')
+    })
+
+    it('cancel() during a restart cycle discards the committed text too', () => {
+      const onFinal = vi.fn()
+      const { result } = renderHook(() => useSpeechRecognition(onFinal))
+
+      act(() => result.current.start())
+      act(() => {
+        latest().onresult(resultsEvent([['I live', true]]))
+      })
+      act(() => {
+        latest().onend()
+      })
+
+      act(() => result.current.cancel())
+      act(() => {
+        latest().onend()
+      })
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+
+      expect(latest().abort).toHaveBeenCalled()
+      expect(result.current.listening).toBe(false)
+      expect(onFinal).not.toHaveBeenCalled()
+    })
+  })
+
   it('does not rebuild the recognition when the callback identity changes', () => {
     const { rerender } = renderHook(({ cb }) => useSpeechRecognition(cb), {
       initialProps: { cb: vi.fn() },
@@ -248,7 +417,7 @@ describe('useSpeechRecognition', () => {
       latest().onresult(resultsEvent([['hello', true]]))
     })
     act(() => {
-      vi.advanceTimersByTime(1500)
+      vi.advanceTimersByTime(2000)
     })
 
     expect(first).not.toHaveBeenCalled()

@@ -228,7 +228,7 @@ describe('App', () => {
     // the default 1000ms to catch it.
     await waitFor(
       () => expect(sendTurn).toHaveBeenCalledWith(42, turnFixture.user_text),
-      { timeout: 2000 },
+      { timeout: 3000 },
     )
     expect(await screen.findByText(turnFixture.reply)).toBeInTheDocument()
   })

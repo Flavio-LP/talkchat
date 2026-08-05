@@ -124,7 +124,7 @@ function App() {
 
   const {
     start,
-    stop,
+    cancel,
     listening,
     interimText,
     isSupported,
@@ -249,7 +249,7 @@ function App() {
             <button
               type="button"
               className={`mic ${listening ? 'mic--listening' : ''}`}
-              onClick={listening ? stop : start}
+              onClick={listening ? cancel : start}
               disabled={!ready || sending}
             >
               <svg
@@ -266,7 +266,7 @@ function App() {
                 <path d="M5 10a7 7 0 0 0 14 0" />
                 <line x1="12" y1="19" x2="12" y2="22" />
               </svg>
-              {listening ? 'Ouvindo… toque para parar' : 'Falar'}
+              {listening ? 'Ouvindo… toque para cancelar' : 'Falar'}
             </button>
           )}
 
